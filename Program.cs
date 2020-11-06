@@ -72,7 +72,6 @@ namespace RubiksCube
                     (Side.Bottom, Yellow), 
                     (Side.Top, White) }.Select( x => 
                         GetSide(x.side)
-                        .Cast<Face>()
                         .Select(f => f.Color = x.color)
                         .ToArray())
                     .ToArray();
@@ -136,8 +135,9 @@ namespace RubiksCube
 
         }
 
-        static void PrintSides(int row, params IEnumerable<Face>[] sides)
+        static void PrintSideRow(string prefix, int row, params IEnumerable<Face>[] sides)
         {
+            Write(prefix);
             var bg = BackgroundColor;
             foreach (var side in sides)
             {
@@ -157,50 +157,47 @@ namespace RubiksCube
                 }
             }
             BackgroundColor = bg;
+            WriteLine();
         }
 
-        static void Print(Cube cube)
+        static void PrintSplayedCube(string caption, Cube cube)
         {
             Clear();
+            WriteLine(caption + "\n");
             WriteLine("    123         ");
-            Write("    "); 
-            PrintSides(row: 0, cube.Top); 
-            WriteLine();
-            Write("    "); 
-            PrintSides(row: 1, cube.Top); 
-            WriteLine();
-            Write(" 789"); 
-            PrintSides(row: 2, cube.Top); 
-            WriteLine();
             for (int i = 0; i < 3; i++)
             {
-                Write((6 - i));
-                PrintSides(row: i, cube.Left, cube.Front, cube.Right, cube.Back);
-                WriteLine();
+                PrintSideRow(prefix: i < 2 ? "    " : " 789", row: i, cube.Top);
             }
             for (int i = 0; i < 3; i++)
             {
-                Write("    ");
-                PrintSides(row: i, cube.Bottom); 
-                WriteLine();
+                PrintSideRow(prefix: (6 - i).ToString(), row: i, cube.Left, cube.Front, cube.Right, cube.Back);
+            }
+            for (int i = 0; i < 3; i++)
+            {
+                PrintSideRow(prefix: "    ", row: i, cube.Bottom); 
             }
         }
-
 
         static void Main(string[] args)
         {
             Console.CursorVisible = false;
 
             Cube cube = new Cube();
+
+            PrintSplayedCube("Press any key to start..", cube);
+            ReadKey(true);
             
             Random rng = new Random();
 
-            for (int i = 0; i < 100; ++i)
+            for (int i = 0; i < 20; ++i)
             {
-                cube.Rotate((Axis)rng.Next(3), rng.Next(3));
-            }
+                PrintSplayedCube("Randomizing cube.. ", cube);
 
-            Print(cube);
+                cube.Rotate((Axis)rng.Next(3), rng.Next(3));
+
+                System.Threading.Thread.Sleep(100);
+            }
 
             var rotations = new Dictionary<ConsoleKey, (Axis axis, int plane)>() 
             {
@@ -217,14 +214,15 @@ namespace RubiksCube
 
             while(!cube.Done)
             {
-                var key = ReadKey().Key;
+                PrintSplayedCube("Choose plane to rotate: [1-9]", cube);
+                var key = ReadKey(true).Key;
                 if (rotations.ContainsKey(key))
                 {
                     var rotation = rotations[key];
                     cube.Rotate(rotation.axis, rotation.plane);
                 } 
-                Print(cube);
             }
+            PrintSplayedCube("Winner winner chicken dinner!", cube);
         }
     }
 }
